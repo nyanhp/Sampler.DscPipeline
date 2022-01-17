@@ -65,7 +65,13 @@ task CompileRootMetaMof {
             }
             . $rootMetaMofPath
 
-            $metaMofs = RootMetaMOF -ConfigurationData $configurationData -OutputPath $MetaMofOutputFolder
+            $metaMofs = foreach ($nodeEnvironment in ($configurationData.AllNodes.Environment | Sort-Object -Unique))
+            {
+                $dataClone = $configurationData.Clone()
+                $dataClone.AllNodes = $dataClone.AllNodes | Where-Object Environment -eq $nodeEnvironment
+                RootMetaMOF -ConfigurationData $dataClone -OutputPath (Join-Path -Path $MetaMofOutputFolder -ChildPath $nodeEnvironment)
+            }
+
             Write-Build Green "Successfully compiled $($metaMofs.Count) Meta MOF files."
         }
         else

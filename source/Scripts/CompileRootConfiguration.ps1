@@ -47,7 +47,7 @@ $cd.Datum = $ConfigurationData.Datum
 
 foreach ($node in $configurationData.AllNodes)
 {
-    $cd.AllNodes = @($ConfigurationData.AllNodes | Where-Object NodeName -EQ $node.NodeName)
+    $cd.AllNodes = @($ConfigurationData.AllNodes | Where-Object {$_.NodeName -EQ $node.NodeName -and $_.Environment -eq $node.Environment})
     try
     {
         $path = Join-Path -Path MOF -ChildPath $node.Environment

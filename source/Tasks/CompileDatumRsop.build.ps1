@@ -33,7 +33,11 @@ param
 
     [Parameter()]
     [string]
-    $ModuleVersion = (property ModuleVersion '')
+    $ModuleVersion = (property ModuleVersion ''),
+
+    [Parameter()]
+    [switch]
+    $UseEnvironment = (property UseEnvironment $false)
 )
 
 task CompileDatumRsop {
@@ -58,10 +62,18 @@ task CompileDatumRsop {
     if ($configurationData.AllNodes)
     {
         Write-Build Green "Generating RSOP output for $($configurationData.AllNodes.Count) nodes."
+        if ($UseEnvironment.IsPresent) {
+            $paths = $configurationData.AllNodes.Environment | Sort-Object -Unique | Foreach-Object {Join-Path -Path $rsopOutputPathVersion -ChildPath $_}
+            $null = New-Item -ItemType Directory -Path $paths
+        }
         $configurationData.AllNodes.Where({$_['Name'] -ne '*'}) | ForEach-Object -Process {
             Write-Build Green "`tBuilding RSOP for $($_['NodeName'])..."
             $nodeRSOP = Get-DatumRsop -Datum $datum -AllNodes ([ordered]@{ } + $_)
-            $nodeRSOP | ConvertTo-Json -Depth 40 | ConvertFrom-Json | Convertto-Yaml -OutFile (Join-Path -Path $rsopOutputPathVersion -ChildPath "$($_['NodeName']).yml") -Force
+            $outPath = Join-Path -Path $rsopOutputPathVersion -ChildPath "$($_['NodeName']).yml"
+            if ($UseEnvironment.IsPresent) {
+                $outPath = Join-Path -Path $rsopOutputPathVersion -ChildPath "$($_['Environment'])\$($_['NodeName']).yml"
+            }
+            $nodeRSOP | ConvertTo-Json -Depth 40 | ConvertFrom-Json | Convertto-Yaml -OutFile $outPath -Force
         }
     }
     else
